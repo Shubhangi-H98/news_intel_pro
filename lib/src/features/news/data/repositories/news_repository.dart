@@ -6,7 +6,7 @@ class NewsRepository {
   final Dio _dio = Dio();
   final String _apiKey = 'cc5e789726a94666a2dc7c49a06d2aa7';
 
-  Future<List<ArticleModel>> getBusinessNews() async {
+  Future<List<ArticleModel>> getBusinessNews({int page = 1, int pageSize = 10}) async {
     try {
       debugPrint("---------- DEBUG: API CALL START ----------");
 
@@ -15,6 +15,8 @@ class NewsRepository {
         'country': 'us',
         'category': 'business',
         'apiKey': _apiKey,
+        'page': page,
+        'pageSize': pageSize,
       };
 
       debugPrint("Request URL: $url");
@@ -52,6 +54,7 @@ class NewsRepository {
     }
   }
 
+  // searchNews remains identical as requested
   Future<List<ArticleModel>> searchNews(String query) async {
     try {
       debugPrint("---------- DEBUG: SEARCH CALL START ----------");

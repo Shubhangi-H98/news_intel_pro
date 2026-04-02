@@ -5,9 +5,47 @@ import '../../data/models/article_model.dart';
 
 final newsRepositoryProvider = Provider((ref) => NewsRepository());
 
-final newsProvider = FutureProvider<List<ArticleModel>>((ref) async {
-  final repository = ref.read(newsRepositoryProvider);
-  return repository.getBusinessNews();
+class NewsNotifier extends StateNotifier<AsyncValue<List<ArticleModel>>> {
+  final NewsRepository _repository;
+  int _currentPage = 1;
+  bool _isFetchingMore = false;
+
+  NewsNotifier(this._repository) : super(const AsyncValue.loading()) {
+    fetchInitial();
+  }
+
+  Future<void> fetchInitial() async {
+    _currentPage = 1;
+    state = const AsyncValue.loading();
+    try {
+      final news = await _repository.getBusinessNews(page: _currentPage);
+      state = AsyncValue.data(news);
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+    }
+  }
+
+  Future<void> fetchMore() async {
+    if (_isFetchingMore || state.isLoading) return;
+    _isFetchingMore = true;
+    _currentPage++;
+
+    try {
+      final moreNews = await _repository.getBusinessNews(page: _currentPage);
+      if (moreNews.isNotEmpty) {
+        final currentNews = state.value ?? [];
+        state = AsyncValue.data([...currentNews, ...moreNews]);
+      }
+    } catch (e) {
+      _currentPage--;
+    } finally {
+      _isFetchingMore = false;
+    }
+  }
+}
+
+final newsPaginationProvider = StateNotifierProvider<NewsNotifier, AsyncValue<List<ArticleModel>>>((ref) {
+  return NewsNotifier(ref.read(newsRepositoryProvider));
 });
 
 final searchQueryProvider = StateProvider<String>((ref) => "");
