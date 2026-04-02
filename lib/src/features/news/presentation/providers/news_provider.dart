@@ -5,20 +5,24 @@ import '../../data/models/article_model.dart';
 
 final newsRepositoryProvider = Provider((ref) => NewsRepository());
 
+final currentCategoryProvider = StateProvider<String>((ref) => 'all');
+
 class NewsNotifier extends StateNotifier<AsyncValue<List<ArticleModel>>> {
   final NewsRepository _repository;
+  final Ref _ref;
   int _currentPage = 1;
   bool _isFetchingMore = false;
 
-  NewsNotifier(this._repository) : super(const AsyncValue.loading()) {
+  NewsNotifier(this._repository, this._ref) : super(const AsyncValue.loading()) {
     fetchInitial();
   }
 
   Future<void> fetchInitial() async {
+    final category = _ref.read(currentCategoryProvider);
     _currentPage = 1;
     state = const AsyncValue.loading();
     try {
-      final news = await _repository.getBusinessNews(page: _currentPage);
+      final news = await _repository.getNews(category: category, page: _currentPage);
       state = AsyncValue.data(news);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
@@ -29,9 +33,10 @@ class NewsNotifier extends StateNotifier<AsyncValue<List<ArticleModel>>> {
     if (_isFetchingMore || state.isLoading) return;
     _isFetchingMore = true;
     _currentPage++;
+    final category = _ref.read(currentCategoryProvider);
 
     try {
-      final moreNews = await _repository.getBusinessNews(page: _currentPage);
+      final moreNews = await _repository.getNews(category: category, page: _currentPage);
       if (moreNews.isNotEmpty) {
         final currentNews = state.value ?? [];
         state = AsyncValue.data([...currentNews, ...moreNews]);
@@ -45,7 +50,7 @@ class NewsNotifier extends StateNotifier<AsyncValue<List<ArticleModel>>> {
 }
 
 final newsPaginationProvider = StateNotifierProvider<NewsNotifier, AsyncValue<List<ArticleModel>>>((ref) {
-  return NewsNotifier(ref.read(newsRepositoryProvider));
+  return NewsNotifier(ref.read(newsRepositoryProvider), ref);
 });
 
 final searchQueryProvider = StateProvider<String>((ref) => "");

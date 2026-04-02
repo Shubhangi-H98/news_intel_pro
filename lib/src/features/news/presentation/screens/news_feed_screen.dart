@@ -16,12 +16,17 @@ class NewsFeedScreen extends ConsumerStatefulWidget {
   ConsumerState<NewsFeedScreen> createState() => _NewsFeedScreenState();
 }
 
-class _NewsFeedScreenState extends ConsumerState<NewsFeedScreen> {
+class _NewsFeedScreenState extends ConsumerState<NewsFeedScreen> with SingleTickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
+  late TabController _tabController;
+
+  final List<String> categories = ['All', 'Business', 'Technology', 'Sports', 'Science', 'Health', 'Entertainment'];
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: categories.length, vsync: this);
+
     _scrollController.addListener(() {
       if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
         ref.read(newsPaginationProvider.notifier).fetchMore();
@@ -32,6 +37,7 @@ class _NewsFeedScreenState extends ConsumerState<NewsFeedScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -84,10 +90,22 @@ class _NewsFeedScreenState extends ConsumerState<NewsFeedScreen> {
           onPressed: () {},
         ),
         title: const Text(
-          'News',
+          'News Intel Pro',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 24),
         ),
         centerTitle: true,
+        bottom: TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          labelColor: Colors.blueAccent,
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: Colors.blueAccent,
+          tabs: categories.map((cat) => Tab(text: cat)).toList(),
+          onTap: (index) {
+            ref.read(currentCategoryProvider.notifier).state = categories[index].toLowerCase();
+            ref.read(newsPaginationProvider.notifier).fetchInitial();
+          },
+        ),
         actions: [
           IconButton(
             icon: Icon(
@@ -116,40 +134,29 @@ class _NewsFeedScreenState extends ConsumerState<NewsFeedScreen> {
             return const Center(child: Text("No news available. Pull to refresh!"));
           }
 
-          final featuredArticle = articles[0];
-          final recentArticles = articles.length > 1 ? articles.sublist(1) : <ArticleModel>[];
-
           return RefreshIndicator(
             onRefresh: () => ref.read(newsPaginationProvider.notifier).fetchInitial(),
-            child: SingleChildScrollView(
+            child: ListView.builder(
               controller: _scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  FeaturedCard(article: featuredArticle),
-                  const SizedBox(height: 16),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Text('RECENT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.grey)),
-                  ),
-                  const SizedBox(height: 8),
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(16),
-                    itemCount: recentArticles.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      return RecentArticleCard(article: recentArticles[index]);
-                    },
-                  ),
-                  const Padding(
+              padding: const EdgeInsets.all(16),
+              itemCount: articles.length + 1,
+              itemBuilder: (context, index) {
+                if (index < articles.length) {
+                  final article = articles[index];
+                  if (index == 0) {
+                    return FeaturedCard(article: article);
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: RecentArticleCard(article: article),
+                  );
+                } else {
+                  return const Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
                     child: Center(child: CircularProgressIndicator(color: Colors.blueAccent)),
-                  ),
-                ],
-              ),
+                  );
+                }
+              },
             ),
           );
         },
@@ -168,7 +175,7 @@ class FeaturedCard extends StatelessWidget {
     return GestureDetector(
       onTap: () { Navigator.push(context, MaterialPageRoute(builder: (c) => ArticleDetailScreen(article: article))); },
       child: Container(
-        height: 250, margin: const EdgeInsets.all(16),
+        height: 250, margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: Colors.blueGrey.shade100),
         clipBehavior: Clip.antiAlias,
         child: Stack(fit: StackFit.expand, children: [
