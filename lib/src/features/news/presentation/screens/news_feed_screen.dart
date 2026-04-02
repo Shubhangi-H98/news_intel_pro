@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../favorites/auth/presentation/screens/login_screen.dart';
 import '../providers/favorites_provider.dart';
 import '../providers/news_provider.dart';
 import '../../data/models/article_model.dart';
@@ -10,10 +12,44 @@ import 'search_screen.dart';
 class NewsFeedScreen extends ConsumerWidget {
   const NewsFeedScreen({super.key});
 
+  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          title: const Text("Logout"),
+          content: const Text("Are you sure you want to logout from News Intel Pro?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+
+                await ref.read(authRepositoryProvider).logout();
+
+                if (context.mounted) {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                        (route) => false,
+                  );
+                }
+              },
+              child: const Text("Logout", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final newsAsync = ref.watch(newsProvider);
-
     final favorites = ref.watch(favoritesListProvider);
     final hasFavorites = favorites.isNotEmpty;
 
@@ -44,12 +80,16 @@ class NewsFeedScreen extends ConsumerWidget {
               );
             },
           ),
-
           IconButton(
             icon: const Icon(Icons.search, color: Colors.blueAccent),
             onPressed: () {
               Navigator.push(context, MaterialPageRoute(builder: (c) => const SearchScreen()));
             },
+          ),
+
+          IconButton(
+            icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+            onPressed: () => _showLogoutDialog(context, ref),
           ),
         ],
       ),
