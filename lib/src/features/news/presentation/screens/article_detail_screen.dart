@@ -1,23 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/article_model.dart';
+import '../providers/favorites_provider.dart';
+import 'favorites_screen.dart';
 
-class ArticleDetailScreen extends StatelessWidget {
+class ArticleDetailScreen extends ConsumerWidget {
   final ArticleModel article;
-
   const ArticleDetailScreen({super.key, required this.article});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+
+    final favoritesNotifier = ref.read(favoritesListProvider.notifier);
+    final isFav = ref.watch(favoritesListProvider).any(
+            (element) => element.url.trim() == article.url.trim()
+    );
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Article Details'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.favorite_border),
+            icon: Icon(
+              isFav ? Icons.favorite : Icons.favorite_border,
+              color: isFav ? Colors.red : null,
+            ),
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Feature coming soon!')),
-              );
+              favoritesNotifier.toggleFavorite(article);
+
+              final isNowFav = ref.read(favoritesListProvider).any((e) => e.url == article.url);
+
+              if (isNowFav) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Saved to favorites!'),
+                    duration: const Duration(seconds: 3),
+                    action: SnackBarAction(
+                      label: 'VIEW',
+                      textColor: Colors.yellow,
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const FavoritesScreen()),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              }
             },
           ),
         ],

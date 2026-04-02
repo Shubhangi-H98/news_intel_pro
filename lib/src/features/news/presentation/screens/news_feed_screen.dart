@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/favorites_provider.dart';
 import '../providers/news_provider.dart';
 import '../../data/models/article_model.dart';
 import 'article_detail_screen.dart';
+import 'favorites_screen.dart';
 import 'search_screen.dart';
 
 class NewsFeedScreen extends ConsumerWidget {
@@ -11,6 +13,9 @@ class NewsFeedScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final newsAsync = ref.watch(newsProvider);
+
+    final favorites = ref.watch(favoritesListProvider);
+    final hasFavorites = favorites.isNotEmpty;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -28,16 +33,22 @@ class NewsFeedScreen extends ConsumerWidget {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_none_outlined, color: Colors.blueAccent),
-            onPressed: () {},
+            icon: Icon(
+              hasFavorites ? Icons.bookmarks : Icons.bookmarks_outlined,
+              color: hasFavorites ? Colors.redAccent : Colors.blueAccent,
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const FavoritesScreen()),
+              );
+            },
           ),
+
           IconButton(
             icon: const Icon(Icons.search, color: Colors.blueAccent),
             onPressed: () {
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (c) => const SearchScreen())
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (c) => const SearchScreen()));
             },
           ),
         ],

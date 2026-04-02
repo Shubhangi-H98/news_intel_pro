@@ -1,14 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:news_intel_pro/src/features/news/presentation/screens/news_feed_screen.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'src/features/news/data/models/article_model.dart';
+import 'src/features/news/presentation/screens/news_feed_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+
+  Hive.registerAdapter(ArticleModelAdapter());
+
+  await Hive.openBox<ArticleModel>('favorites');
   runApp(
     const ProviderScope(
       child: MyApp(),
     ),
   );
 }
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
